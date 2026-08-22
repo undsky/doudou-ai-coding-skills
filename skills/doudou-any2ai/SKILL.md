@@ -1,12 +1,34 @@
 ---
 name: doudou-any2ai
-description: 按文件类型将任意本地文件转换为 AI 友好的文本（Markdown、纯文本或带时间戳的字幕）：音视频使用 faster-whisper 转录，Office 文档和电子书使用 anydoc 转为 Markdown，图片和 PDF 使用 PaddleOCR 识别（自动回退至文本层提取）。当用户提供本地文件并希望获取其中的文本内容时使用此技能，包括语音转文字、音频转文本、从视频提取字幕、生成 SRT/VTT、提取配音文稿、读取图片或截图中的文字、识别扫描件或收据、将 PDF/Word/Excel/PowerPoint/EPUB 转为 Markdown，以及“这段录音说了什么”“总结这个视频”“阅读此附件”“提取这个表格中的数字”等需求。即使用户没有明确说“转换”“转录”“OCR”或“whisper”，只要意图是将文件内容变成模型可读取和处理的文本，就应使用此技能。
+description: 按文件类型将任意本地文件转换为 AI 友好的文本（Markdown、纯文本或带时间戳的字幕）：音视频使用 faster-whisper 转录，Office 文档和电子书使用 anydoc 转为 Markdown，图片和 PDF 使用 PaddleOCR 识别（自动回退至文本层提取）。当用户提供本地文件并希望获取其中的文本内容时使用此技能，包括语音转文字、音频转文本、从视频提取字幕、生成 SRT/VTT、提取配音文稿、读取图片或截图中的文字、识别扫描件或收据、将 PDF/Word/Excel/PowerPoint/EPUB 转为 Markdown，以及“这段录音说了什么”“总结这个视频”“阅读此附件”“提取这个表格中的数字”等需求。即使用户没有明确说“转换”“转录”“OCR”或“whisper”，只要意图是将文件内容变成模型可读取和处理的文本，就应使用此技能。用户没有指定文件或目录时，默认转换项目根目录下 `resources/data/` 里的文件。
 ---
 
 # Any2AI：任意文件转 AI 友好文本
 
 按文件类型分派到对应的转换服务，拿回可以直接喂给模型的文本。你负责识别类型、挑参数、
 把结果交给用户；转换在服务端跑。
+
+## 第零步：确定要转哪些文件
+
+| 用户怎么说                        | 转什么                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| 给了文件路径                      | 就转这些文件                                                             |
+| 给了目录                          | 递归扫这个目录下的所有文件                                               |
+| **没指定**（如"转一下资料""读下附件说了什么"） | **默认转项目根目录下的 `resources/data/`**，递归扫描                     |
+
+项目根从当前工作目录往上找，遇到 `.agents` / `.claude` 就认作项目根 —— 和脚本找 `.env`
+的规则一致（见 **服务地址**）。
+
+```bash
+# 用户没指定 → 先看看 resources/data/ 里有什么
+find resources/data -type f -not -name '.*' -not -name '.gitkeep'
+```
+
+扫出来的文件按下方 **第一步** 分类型处理，不在支持列表里的跳过。
+
+`resources/data/` 不存在或者是空的（只有 `.gitkeep`），**不要自己建目录、也不要转别的
+地方的文件** —— 直接告诉用户这个目录是空的，问他要转哪些文件，或者让他把文件放进
+`resources/data/`。
 
 ## 第一步：按类型分派
 
@@ -49,14 +71,14 @@ description: 按文件类型将任意本地文件转换为 AI 友好的文本（
 | 不用保存   | 用户明确说明 "不用存" 或 "我就看看内容"，则不传 `-o`，正文只走 stdout，内容留在对话里         |
 
 ```bash
-# 默认情况（用户未明确指定路径，默认存入 resources/any2ai/）
-python3 scripts/whisper.py data/口播.mp4 -l Chinese -o resources/any2ai/口播-20260819153012.srt
+# 默认情况（用户未指定输入也未指定输出：读 resources/data/，写 resources/any2ai/）
+python3 scripts/whisper.py resources/data/口播.mp4 -l Chinese -o resources/any2ai/口播-20260819153012.srt
 
 # 用户指定了自定义目录
-python3 scripts/whisper.py data/口播.mp4 -l Chinese -o out/口播.srt
+python3 scripts/whisper.py resources/data/口播.mp4 -l Chinese -o out/口播.srt
 
 # 用户明确表示"不用存" —— 不给 -o，正文进 stdout
-python3 scripts/whisper.py data/口播.mp4 -l Chinese
+python3 scripts/whisper.py resources/data/口播.mp4 -l Chinese
 ```
 
 ## 音视频转字幕
