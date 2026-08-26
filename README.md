@@ -4,6 +4,7 @@
 
 | 技能             | 用途                                                                                                 |
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `doudou-dev`     | 跨平台管理前后端（`doudou-eggjs` 与 `doudou-vue3`）的开发调试（`dev`）与生产打包（`build`）           |
 | `doudou-any2ai`  | 将任意类型文件 转成 AI 友好文本                                                                      |
 | `doudou-product` | 根据需求资料或参考项目链接，输出产品需求文档、设计交付说明、数据库表结构、研发实现说明、测试验收用例 |
 | `doudou-test`    | 已获授权的 Web 应用黑盒/白盒测试，输出 Markdown 测试报告                                             |
@@ -15,6 +16,21 @@ npx skills add undsky/doudou-ai-coding-skills
 ```
 
 ## 使用
+
+### doudou-dev
+
+跨平台（Windows、macOS、Linux）一键运行开发调试或生产打包：
+
+- **开发调试**（启动 `doudou-eggjs: npm run dev` 与 `doudou-vue3: pnpm dev`）：
+  ```
+  /doudou-dev
+  # 或关键词：“启动项目”、“调试后端”、“运行前端”
+  ```
+- **生产打包**（执行 `doudou-eggjs: npm run build` 与 `doudou-vue3: pnpm run build:prod`）：
+  ```
+  /doudou-dev build
+  # 或关键词：“打包项目”、“构建前后端”、“生成生产包”
+  ```
 
 ### doudou-any2ai
 
