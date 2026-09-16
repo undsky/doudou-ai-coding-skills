@@ -41,17 +41,14 @@ function error(msg) {
   console.log(`  ${colors.red}✖${colors.reset} ${msg}`);
 }
 
-// 检查端口是否被占用/可连接
-function checkPort(port, host = '127.0.0.1', timeout = 1000) {
+// 检查单地址端口连通性
+function checkSingleHostPort(port, host, timeout = 800) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
-    let status = 'closed';
-
     socket.setTimeout(timeout);
     socket.once('connect', () => {
-      status = 'open';
       socket.destroy();
-      resolve(true); // 端口处于监听/开放状态
+      resolve(true);
     });
     socket.once('timeout', () => {
       socket.destroy();
@@ -65,25 +62,32 @@ function checkPort(port, host = '127.0.0.1', timeout = 1000) {
   });
 }
 
+// 检查端口是否被占用/可连接（同时探测 IPv4 与 IPv6 回环地址，防止 Vite/Node 仅监听 ::1 时漏检）
+function checkPort(port, host = null, timeout = 800) {
+  if (host) {
+    return checkSingleHostPort(port, host, timeout);
+  }
+  return checkSingleHostPort(port, '127.0.0.1', timeout).then((open) => {
+    if (open) return true;
+    return checkSingleHostPort(port, '::1', timeout);
+  });
+}
+
 // 查找项目根目录（寻找包含 doudou-eggjs 与 doudou-vue3 的目录）
 export function findProjectRoot(startDir = process.cwd()) {
   let current = path.resolve(startDir);
-  const root = path.parse(current).root;
 
-  while (current !== root) {
+  while (true) {
     const hasEgg = fs.existsSync(path.join(current, 'doudou-eggjs', 'package.json'));
     const hasVue = fs.existsSync(path.join(current, 'doudou-vue3', 'package.json'));
     if (hasEgg && hasVue) {
       return current;
     }
-    // 检查是否在 doudou-eggjs 或 doudou-vue3 目录内
     const parent = path.dirname(current);
-    const parentHasEgg = fs.existsSync(path.join(parent, 'doudou-eggjs', 'package.json'));
-    const parentHasVue = fs.existsSync(path.join(parent, 'doudou-vue3', 'package.json'));
-    if (parentHasEgg && parentHasVue) {
-      return parent;
+    if (parent === current) {
+      break; // 已到达系统盘符或根目录
     }
-    current = path.dirname(current);
+    current = parent;
   }
 
   return null;

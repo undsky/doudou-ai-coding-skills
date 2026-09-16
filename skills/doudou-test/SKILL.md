@@ -66,10 +66,10 @@ UniApp 内置页面（`doudou-uniapp/pages/`，同为模版能力，按相同规
 - 前端项目：`doudou-vue3/`
 - 后端项目：`doudou-eggjs/`
 - UniApp 客户端（H5、App、小程序）：`doudou-uniapp/`
-- 数据库配置：`doudou-eggjs/config/config.default.js` 中的 `config.database`
-- 数据库 schema：`doudou-eggjs/sql/`，根据 `config.database` 配置的数据库类型选择对应目录或文件
+- 数据库配置：优先读取 `doudou-eggjs/config/config.local.js`（本地环境覆盖项），若不存在则读取 `doudou-eggjs/config/config.default.js` 中的 `config.database`（驱动字段位于 `config.database.master.driver`）
+- 数据库 schema：`doudou-eggjs/sql/`，根据 `config.database` 配置的驱动类型选择对应目录或文件（目录为 `pgsql/`、`mysql/`、`sqlite/`，注意 PostgreSQL 对应目录名及驱动名称为 `pgsql`）
 
-数据库类型只支持 `postgresql`、`mysql`、`sqlite`；遇到其他类型先向用户确认。读取数据库配置时，不要在报告或聊天中暴露密码、令牌、Cookie、私钥或完整连接字符串，只报告数据库类型、脱敏后的连接信息和实际读取的 schema 范围。不要擅自猜测仓库外的源码或 schema 路径。
+数据库类型只支持 `pgsql`（`postgresql`）、`mysql`、`sqlite`；遇到其他类型先向用户确认。读取数据库配置时，不要在报告或聊天中暴露密码、令牌、Cookie、私钥或完整连接字符串，只报告数据库类型、脱敏后的连接信息和实际读取的 schema 范围。不要擅自猜测仓库外的源码或 schema 路径。
 
 ## 黑盒测试流程
 
@@ -195,7 +195,7 @@ UniApp 内置页面（`doudou-uniapp/pages/`，同为模版能力，按相同规
 - 是否明确询问并记录了增删改授权？
 - 是否避免了生产环境真实写操作？
 - 是否使用 Chrome DevTools MCP 获得了可复现证据？
-- 白盒测试是否读取了仓库固定目录及 `config.default.js` 中数据库配置，并按配置选择 `sql/` 下的 schema？
+- 白盒测试是否读取了仓库固定目录及数据库配置（优先 config.local.js，回退 config.default.js），并按配置选择 sql/ 下的 schema（注意 pgsql 目录对应 PostgreSQL）？
 - 白盒分析是否跳过内置控制器、内置页面及其配套系统接口/表，仅检查业务代码和业务数据结构？
 - 是否脱敏了 Cookie、令牌、密码和个人数据？
 - 每个发现是否包含复现步骤、预期/实际结果、证据和建议？

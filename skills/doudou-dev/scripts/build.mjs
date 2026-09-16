@@ -62,7 +62,12 @@ function parseArgs() {
     } else if (arg === '--no-install') {
       options.autoInstall = false;
     } else if (arg === '--cwd') {
-      options.cwd = args[++i];
+      const nextArg = args[++i];
+      if (!nextArg || nextArg.startsWith('-')) {
+        console.error(`${colors.red}错误: --cwd 选项必须指定有效的项目根目录路径${colors.reset}`);
+        process.exit(1);
+      }
+      options.cwd = nextArg;
     }
   }
 
@@ -148,14 +153,21 @@ function getDirSize(dirPath) {
   if (!fs.existsSync(dirPath)) return 0;
   let totalSize = 0;
   function calculate(itemPath) {
-    const stat = fs.statSync(itemPath);
-    if (stat.isDirectory()) {
-      const files = fs.readdirSync(itemPath);
-      for (const file of files) {
-        calculate(path.join(itemPath, file));
+    try {
+      const stat = fs.lstatSync(itemPath);
+      if (stat.isSymbolicLink()) {
+        return; // 忽略符号链接，避免死循环或失效链接
       }
-    } else {
-      totalSize += stat.size;
+      if (stat.isDirectory()) {
+        const files = fs.readdirSync(itemPath);
+        for (const file of files) {
+          calculate(path.join(itemPath, file));
+        }
+      } else {
+        totalSize += stat.size;
+      }
+    } catch {
+      // 忽略无法访问的临时文件
     }
   }
   calculate(dirPath);
@@ -237,9 +249,9 @@ async function main() {
         const envProdPath = path.join(vueDir, '.env.production');
         if (fs.existsSync(envProdPath)) {
           const content = fs.readFileSync(envProdPath, 'utf8');
-          const match = content.match(/VITE_OUT_DIR\s*=\s*(.+)/);
+          const match = content.match(/VITE_OUT_DIR\s*=\s*([^\r\n#]+)/);
           if (match && match[1]) {
-            outDirName = match[1].trim();
+            outDirName = match[1].trim().replace(/^['"]|['"]$/g, '');
           }
         }
         const distDir = path.join(vueDir, outDirName);

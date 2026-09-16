@@ -58,9 +58,13 @@ function killProcessTree(pid) {
   }
 }
 
+let isCleaningUp = false;
 function cleanupAndExit(code = 0) {
+  if (isCleaningUp) return;
+  isCleaningUp = true;
   console.log(`\n${colors.yellow}[doudou-dev] 正在关闭所有服务...${colors.reset}`);
-  for (const child of runningChildren) {
+  while (runningChildren.length > 0) {
+    const child = runningChildren.pop();
     if (child && child.pid) {
       killProcessTree(child.pid);
     }
@@ -71,7 +75,8 @@ function cleanupAndExit(code = 0) {
 process.on('SIGINT', () => cleanupAndExit(0));
 process.on('SIGTERM', () => cleanupAndExit(0));
 process.on('exit', () => {
-  for (const child of runningChildren) {
+  while (runningChildren.length > 0) {
+    const child = runningChildren.pop();
     if (child && child.pid) {
       killProcessTree(child.pid);
     }
@@ -103,7 +108,12 @@ function parseArgs() {
     } else if (arg === '--no-install') {
       options.autoInstall = false;
     } else if (arg === '--cwd') {
-      options.cwd = args[++i];
+      const nextArg = args[++i];
+      if (!nextArg || nextArg.startsWith('-')) {
+        console.error(`${colors.red}错误: --cwd 选项必须指定有效的项目根目录路径${colors.reset}`);
+        process.exit(1);
+      }
+      options.cwd = nextArg;
     }
   }
 
